@@ -89,6 +89,8 @@ static uint64_t handler_jcc(VMContext& ctx);
 static uint64_t handler_xor(VMContext& ctx);
 static uint64_t handler_or(VMContext& ctx);
 static uint64_t handler_mul(VMContext& ctx);
+static uint64_t handler_sub(VMContext& ctx);
+static uint64_t handler_movreg(VMContext& ctx);
 
 static VMHandler handlers[] = {
     handler_label,
@@ -100,6 +102,8 @@ static VMHandler handlers[] = {
     handler_xor,
     handler_or,
     handler_mul,
+    handler_sub,
+    handler_movreg,
 };
 
 #ifdef VMDEBUG
@@ -138,10 +142,26 @@ static uint64_t handler_add(VMContext& ctx)
     dispatch(ctx);
 }
 
+static uint64_t handler_sub(VMContext& ctx)
+{
+    auto& dst = ctx.op_reg();
+    auto& op1 = ctx.op_reg();
+    auto& op2 = ctx.op_reg();
+    dst       = op1 - op2;
+    dispatch(ctx);
+}
+
 static uint64_t handler_movimm(VMContext& ctx)
 {
     auto& dst = ctx.op_reg();
     dst       = ctx.op_imm64();
+    dispatch(ctx);
+}
+static uint64_t handler_movreg(VMContext& ctx)
+{
+    auto& dst = ctx.op_reg();
+    auto& op1 = ctx.op_reg();
+    dst       = op1;
     dispatch(ctx);
 }
 
@@ -219,27 +239,79 @@ static uint64_t handler_mul(VMContext& ctx)
 #define JCC(cond, label)   OPCODE(5), cond, label
 #define XOR(dst, op1, op2) OPCODE(6), dst, op1, op2
 #define OR(dst, op1, op2)  OPCODE(7), dst, op1, op2
+#define MUL(dst, op1, op2) OPCODE(8), dst, op1, op2
+#define SUB(dst, op1, op2) OPCODE(9), dst, op1, op2
+#define MOV(dst, op1) OPCODE(10), dst, op1
 
+/*
+//
+// return a + b with mul
+//
+constexpr uint8_t bytecode1[] =
+{
+
+    ADD(REG(0), REG(2), REG(3)),
+    //MUL(REG(0), REG(0), REG(1)),
+    RET(REG(0)),
+
+
+};
+
+
+//
+// return a * b with mul
+//
+*/
 /*
 constexpr uint8_t bytecode1[] =
 {
-    MOVIMM(REG(254), 0x2),
-    CMP(REG(255), REG(0), REG(254)),
-    JCC(REG(255), 0),
-    RET(REG(254)),
-    LABEL(0),
-    ADD(REG(0), REG(0), REG(1)),
-    MOVIMM(REG(0), 0x1122334455667788),
+    //MUL(REG(0), REG(0), REG(1)),
     RET(REG(0)),
 };
 */
 
+//
+// return a * b without mul
+//
+
+
+constexpr uint8_t bytecode1[] =
+{
+    //MUL(REG(0), REG(0), REG(1)),
+    RET(REG(0)),
+};
+
+
+
+/*
+constexpr uint8_t bytecode1[] =
+{
+    //MOVIMM(REG(254), 0x2),
+    //CMP(REG(255), REG(0), REG(254)),
+    //JCC(REG(255), 0),
+    //RET(REG(254)),
+    //LABEL(0),
+    ADD(REG(0), REG(0), REG(1)),
+    //MOVIMM(REG(0), 0x1122334455667788),
+    RET(REG(0)),
+
+    MOVIMM(REG(254), 0x1),
+    MOVIMM(REG(254), 0x1),
+    ADD(REG(0), REG(0), REG(1)),
+    SUB(REG(0), REG(1), REG(254)),
+
+
+
+};
+*/
+/*
 constexpr uint8_t bytecode1[] = {
     OR(REG(4), REG(0), REG(1)),
     XOR(REG(5), REG(2), REG(3)),
     ADD(REG(6), REG(4), REG(5)),
     RET(REG(6)),
 };
+*/
 
 constexpr static VMLabels labels1 = VMLabels(bytecode1);
 
